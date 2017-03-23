@@ -154,11 +154,7 @@ export function draw() {
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
 
-	body.append("div").attr("id", "replay")
-		.style("position", "absolute")
-		.style("left", "10px")
-		.style("top", "10px")
-		.text("Replay").on("click", play);
+	body.append("div").attr("id", "replay").text("Replay").on("click", play);
 
 	update();
 	window.onresize = update;
