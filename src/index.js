@@ -2,8 +2,6 @@
 // import { select as $, selectAll as $$ } from "d3";
 var $ = d3.select, $$ = d3.selectAll;
 
-import Popup from "@flourish/popup";
-
 var svg, plot, h, w, x, y, colors;
 
 var line = d3.line()
