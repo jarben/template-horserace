@@ -1,5 +1,5 @@
-// import * as d3 from "d3";
-// import { select as $, selectAll as $$ } from "d3";
+import * as d3 from "d3";
+import { select as $, selectAll as $$ } from "d3";
 var $ = d3.select, $$ = d3.selectAll;
 
 var svg, plot, h, w, x, y, colors;
@@ -128,7 +128,7 @@ export function update() {
 	labels_update.select(".rank-number").attr("font-size", state.rank_font_size);
 	labels_update.select(".name").attr("font-size", state.label_font_size);
 	labels.exit().remove();
-	
+
 	play();
 }
 

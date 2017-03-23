@@ -13,6 +13,7 @@
     "less": "node_modules/less/bin/lessc --plugin=less-plugin-clean-css --source-map less/style.less static/style.css"
   },
   "dependencies": {
+    "d3": "^4.7.3",
     "less": "^2.7.2",
     "less-plugin-clean-css": "^1.5.1",
     "rollup": "^0.41.6",
