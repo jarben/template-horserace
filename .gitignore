@@ -1,4 +1,8 @@
 .DS_Store
-/node_modules/
+node_modules/
 npm-debug.log
-/google/
+google/
+template.js
+template.js.map
+static/style.css
+static/style.css.map
