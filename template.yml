@@ -1,0 +1,97 @@
+# The 'id' should be a string that uniquely identifies your template
+id: 'horserace'
+name: Horcerace chart
+author: Flourish team & Google News Lab
+
+# This template is compatible with SDK version 2
+sdk_version: 2
+
+build:
+  src:
+    script: npm run build
+    directory: src
+    files:
+      - rollup.config.js
+  less:
+    script: npm run less
+    directory: less
+
+settings:
+  - Lines
+  - property: line_width
+    name: Line width
+    type: number
+  - property: line_opacity
+    name: Line opacity
+    type: number
+  - property: shade
+    name: Show shading behind line
+    type: boolean
+  - property: shade_width
+    name: Shading width
+    type: number
+  - property: shade_opacity
+    name: Shading opacity
+    type: number
+
+  - Cirles and labels
+  - property: start_circle_r
+    name: Start circle radius
+    type: number
+  - property: end_circle_r
+    name: End circle radius
+    type: number
+  - property: rank_font_size
+    name: Rank font size
+    type: number
+  - property: label_font_size
+    name: Label font size
+    type: number
+
+  - Colors
+  - property: palette
+    name: Color scheme
+    description: Choose a d3 color scheme, such as [[schemeCategory20]], [[schemeCategory20b]], [[schemeCategory20c]] or [[schemeCategory10]]
+    type: string
+
+  - Animation
+  - property: duration
+    name: Animation duration
+    type: number
+    min: 0
+    step: 100
+
+  - Margins
+  - property: margin_top
+    name: Top
+    type: number
+    min: 0
+    step: 10
+  - property: margin_right
+    name: Right
+    type: number
+    min: 0
+    step: 10
+  - property: margin_bottom
+    name: Bottom
+    type: number
+    min: 0
+    step: 10
+  - property: margin_left
+    name: Left
+    type: number
+    min: 0
+    step: 10
+
+data:
+  - Data
+  - name: Time column
+    dataset: horserace
+    key: timeslice
+    type: column
+    column: "Data::B"
+  - name: Lines
+    dataset: horserace
+    key: horses
+    type: columns
+    columns: "Data::C-O"
