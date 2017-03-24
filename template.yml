@@ -1,10 +1,8 @@
-# The 'id' should be a string that uniquely identifies your template
-id: 'horserace'
+id: horserace
 name: Horserace chart
 author: Flourish team & Google News Lab
-description: A simple "horserace" chart template for changing rank over time
+description: A simple “horserace” chart template for changing rank over time
 
-# This template is compatible with SDK version 2
 sdk_version: 2
 
 build:
