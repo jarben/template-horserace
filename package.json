@@ -12,6 +12,10 @@
     "build": "rollup -c",
     "less": "node_modules/less/bin/lessc --plugin=less-plugin-clean-css --source-map less/style.less static/style.css"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiln/template-horserace"
+  },
   "dependencies": {
     "d3": "^4.7.3",
     "less": "^2.7.2",
