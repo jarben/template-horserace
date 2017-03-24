@@ -84,6 +84,11 @@ settings:
     min: 0
     step: 10
 
+  - Text
+  - property: button_text
+    name: Replay button text
+    type: string
+
 data:
   - Data
   - name: Time column
