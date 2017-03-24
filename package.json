@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "A template for use on flourish.studio",
   "main": "template.js",
-  "author": "Flourish team",
-  "license": "ISC",
+  "author": "Flourish and Google News Lab teams",
+  "license": "MIT",
   "keywords": [
     "flourish"
   ],
