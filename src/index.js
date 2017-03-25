@@ -15,26 +15,19 @@ export var state = {
 	margin_right: 120,
 	margin_bottom: 50,
 	margin_left: 50,
-
 	start_circle_r: 2,
 	end_circle_r: 10,
 	label_font_size: 12,
 	rank_font_size: 14,
-
 	palette: "schemeCategory20",
-
 	shade: true,
 	shade_opacity: 0.1,
 	shade_width: 20,
-
 	line_opacity: 1,
 	line_width: 2,
-
 	duration: 300,
 	timeslice: 0,
-
 	selected_horse: null,
-
 	button_text: "Replay"
 };
 
@@ -91,7 +84,6 @@ export function update() {
 			d3.event.stopPropagation();
 			if (!state.selected_horse) state.selected_horse = i;
 			else state.selected_horse = null;
-			console.log("state.selected_horse", state.selected_horse);
 			update();
 		});
 	lines_enter.append("path").attr("class", "shade")
@@ -121,11 +113,12 @@ export function update() {
 
 	var start_circles = plot.selectAll(".start-circle").data(horses);
 	var start_circles_enter = start_circles.enter().append("circle").attr("class", "horse start-circle")
-		.attr("cx", "0")
-		.attr("cy", function(d) { return y(d.ranks[0]); })
+		.attr("cx", 0)
 		.attr("r", 5)
 		.attr("fill", color);
-	start_circles.merge(start_circles_enter).select(".start.circle")
+	start_circles.merge(start_circles_enter)
+		.attr("cy", function(d) { return y(d.ranks[0]); })
+		.select(".start.circle")
 		.attr("r", state.start_circle_r);
 	start_circles.exit().remove();
 
@@ -180,21 +173,16 @@ function clearHighlighting() {
 export function draw() {
 	var body = $("body");
 	svg = body.append("svg").on("click", clearHighlighting);
-
 	plot = svg.append("g").attr("id", "plot");
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
-
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
-
 	body.append("div").attr("id", "replay").text(state.button_text).on("click", play);
-
-	update();
 	window.onresize = update;
+	update();
 }
 
 function play() {
-	console.log("play", play);
 	for (var t = 0; t < data.horserace.length; t++) {
 		$("#clip rect").transition().ease(d3.easeLinear).duration(state.duration)
 			.delay(t * state.duration)
