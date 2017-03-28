@@ -1,6 +1,5 @@
 import * as d3 from "d3";
 import { select as $, selectAll as $$ } from "d3";
-var $ = d3.select, $$ = d3.selectAll;
 
 var svg, plot, h, w, x, y, colors, horses;
 
