@@ -1,6 +1,6 @@
-id: flourish/horserace
-name: Horserace chart
-author: Flourish & Google News Lab teams
+id: football-season-replay
+name: Football season replay
+author: Daan Louter
 description: A simple “horserace” chart template for showing changing rank over time
 
 sdk_version: 2
@@ -16,6 +16,11 @@ build:
     directory: less
 
 settings:
+  - Time
+  - property: desired_time
+    name: Current time
+    type: number
+  
   - Lines
   - property: line_width
     name: Line width
@@ -87,6 +92,11 @@ settings:
     name: Replay button text
     type: string
 
+  - Flip y axis
+  - property: flip_axis
+    name: Flip the y-axis
+    type: boolean
+    
 data:
   - Data
   - name: Time column
@@ -98,4 +108,4 @@ data:
     dataset: horserace
     key: horses
     type: columns
-    columns: "Data::B-N"
+    columns: "Data::B-S"

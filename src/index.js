@@ -26,46 +26,71 @@ export var state = {
 	line_width: 2,
 	duration: 300,
 	timeslice: 0,
+	desired_time:10,
 	selected_horse: null,
-	button_text: "Replay"
+	button_text: "Replay",
+	flip_axis: true
 };
+var current_time;
 
 var prev_window_width, prev_window_height, changed_size = false;
 export function update() {
 
 	changed_size = prev_window_width != window.innerWidth || prev_window_height != window.innerHeight;
 
-	if (changed_size) {
-		svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
-		plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
-		w = window.innerWidth - state.margin_left - state.margin_right;
-		h = window.innerHeight - state.margin_top - state.margin_bottom;
-		$("#clip rect").attr("height", h + state.shade_width).attr("transform", "translate(0,-" + state.shade_width/2 + ")");
-	}
-
 	$("#replay").text(state.button_text);
 
+	colors = d3[state.palette];
+
+	if( changed_size ) { resizeVizContainer() };
+	if( changed_size || !data.horserace.processed ) { updateScale(); }
+	if( changed_size || !data.horserace.processed ) { updateAxes(); }
+	if( !data.horserace.processed ){ updateData(); }
+
+	updateViz();
+	animateViz();
+	prev_window_width = window.innerWidth;
+	prev_window_height = window.innerHeight;
+}
+
+function resizeVizContainer(){
+	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
+	w = window.innerWidth - state.margin_left - state.margin_right;
+	h = window.innerHeight - state.margin_top - state.margin_bottom;
+	$("#clip rect").attr("height", h + state.shade_width).attr("transform", "translate(0,-" + state.shade_width/2 + ")");
+}
+
+function updateScale(){
 	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace, function(d, i) { return i; }));
 	y = d3.scaleLinear().range([h, 0]).domain([
 		d3.max(data.horserace, function(d) { return d3.max(d.horses, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.horses, function(v) { return +v; }); })
 	]);
+	if(state.flip_axis){
+		y.range([0,h])
+	}
+}
 
-	colors = d3[state.palette];
-	function color(d, i) { return colors[i % colors.length]; }
-
-	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace[d].timeslice });
+function updateAxes(){
+	var ticks = window.innerWidth < 620 ? Math.round(data.horserace.length/2) : data.horserace.length;
+	var xAxis = d3.axisBottom(x).tickSize(-h).ticks(ticks).tickFormat(function(d) { return data.horserace[d].timeslice });
+	
 	$(".x.axis").call(xAxis)
-		.selectAll("text")
-		.style("text-anchor","start")
-		.attr("dx", "2.3em")
-		.attr("dy", "-0.9em")
-		.attr("transform", "rotate(-45)");
+		.attr('transform','translate(0,' + h + ')')
 
-	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
+	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10).tickValues(d3.range(0,70,3));
 	$(".y.axis").call(yAxis);
 
+	$$(".x.axis .tick").on('click',function(e){
+		state.desired_time = e;
+		update();
+	})
+}
+
+function updateData(){
 	horses = [];
+	data.horserace.processed = true;
 	for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
 		var header = data.horserace.column_names.horses[i];
 		var ranks = [];
@@ -75,6 +100,10 @@ export function update() {
 		}
 		horses.push({ name: header, ranks: ranks });
 	}
+}
+
+function updateViz(){
+	function color(d, i) { return colors[i % colors.length]; }
 
 	var lines = plot.selectAll(".line-group").data(horses);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
@@ -91,6 +120,7 @@ export function update() {
 	lines_enter.append("path").attr("class", "line")
 		.attr("clip-path", "url(#clip)")
 		.attr("fill", "none");
+	
 	var lines_update = lines.merge(lines_enter)
 		.attr("opacity", function(d, i) {
 			return i == state.selected_horse || !state.selected_horse ? 1 : 0;
@@ -108,6 +138,7 @@ export function update() {
 		.attr("display", state.shade ? "block" : "none")
 		.attr("opacity", state.shade_opacity)
 		.attr("stroke-width", state.shade_width);
+	
 	lines.exit().remove();
 
 	var start_circles = plot.selectAll(".start-circle").data(horses);
@@ -137,10 +168,6 @@ export function update() {
 		.attr("x", state.end_circle_r + 2)
 		.text(function(d) { return d.name; });
 	labels.exit().remove();
-
-	if (changed_size) play();
-	prev_window_width = window.innerWidth;
-	prev_window_height = window.innerHeight;
 }
 
 function mouseover(d, i) {
@@ -170,25 +197,40 @@ function clearHighlighting() {
 }
 
 export function draw() {
+	state.desired_time = current_time = data.horserace.length - 1;
 	var body = $("body");
-	svg = body.append("svg").on("click", clearHighlighting);
+	svg = body.append("svg");
 	plot = svg.append("g").attr("id", "plot");
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
-	body.append("div").attr("id", "replay").text(state.button_text).on("click", play);
 	window.onresize = update;
 	update();
 }
 
-function play() {
-	for (var t = 0; t < data.horserace.length; t++) {
-		$("#clip rect").transition().ease(d3.easeLinear).duration(state.duration)
-			.delay(t * state.duration)
-			.attr("width", x(t));
-		$$(".labels-group").transition().ease(d3.easeLinear).duration(state.duration)
-			.delay(t * state.duration)
-			.attr("transform", function(d) { return "translate(" + x(t) + "," + y(d.ranks[t]) + ")"; })
-			.select(".rank-number").text(function(d) { return d.ranks[t]; });
-	}
+
+var moveInterval;
+function animateViz(){
+	clearInterval(moveInterval);
+	moveInterval = setInterval(function(){
+		if(current_time < state.desired_time){
+			current_time++;
+		}else if(current_time > state.desired_time){
+			current_time--;
+		}else if(current_time == state.desired_time){
+			clearInterval(moveInterval)
+		}
+		updateMask();
+	},state.duration)
 }
+
+function updateMask(){
+	$("#clip rect").transition().ease(d3.easeLinear).duration(state.duration)
+		.attr("width", x(current_time));
+
+	$$(".labels-group").transition().ease(d3.easeLinear).duration(state.duration)
+		.attr("transform", function(d) { return "translate(" + x(current_time) + "," + y(d.ranks[current_time]) + ")"; })
+		.select(".rank-number").text(function(d) { return d.ranks[current_time]; });
+}
+
+
