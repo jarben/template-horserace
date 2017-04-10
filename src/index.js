@@ -42,10 +42,13 @@ export function update() {
 
 	colors = d3[state.palette];
 
+
 	if( changed_size ) { resizeVizContainer() };
+	
 	if( changed_size || !data.horserace.processed ) { updateScale(); }
 	if( changed_size || !data.horserace.processed ) { updateAxes(); }
 	if( !data.horserace.processed ){ updateData(); }
+	
 
 	updateViz();
 	animateViz();
@@ -62,10 +65,10 @@ function resizeVizContainer(){
 }
 
 function updateScale(){
-	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace, function(d, i) { return i; }));
+	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace[0].weeks, function(d, i) { console.log(i); return i; }));
 	y = d3.scaleLinear().range([h, 0]).domain([
-		d3.max(data.horserace, function(d) { return d3.max(d.horses, function(v) { return +v; }); }),
-		d3.min(data.horserace, function(d) { return d3.min(d.horses, function(v) { return +v; }); })
+		d3.max(data.horserace, function(d) { return d3.max(d.weeks, function(v) { return +v; }); }),
+		d3.min(data.horserace, function(d) { return d3.min(d.weeks, function(v) { return +v; }); })
 	]);
 	if(state.flip_axis){
 		y.range([0,h])
@@ -73,13 +76,13 @@ function updateScale(){
 }
 
 function updateAxes(){
-	var ticks = window.innerWidth < 620 ? Math.round(data.horserace.length/2) : data.horserace.length;
-	var xAxis = d3.axisBottom(x).tickSize(-h).ticks(ticks).tickFormat(function(d) { return data.horserace[d].timeslice });
+	var ticks = data.horserace[0].weeks.length;
+	var xAxis = d3.axisBottom(x).tickSize(-h).ticks(ticks).tickFormat(function(d) { return d });
 	
 	$(".x.axis").call(xAxis)
 		.attr('transform','translate(0,' + h + ')')
 
-	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10).tickValues(d3.range(0,70,3));
+	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10)	;
 	$(".y.axis").call(yAxis);
 
 	$$(".x.axis .tick").on('click',function(e){
@@ -89,23 +92,23 @@ function updateAxes(){
 }
 
 function updateData(){
-	horses = [];
-	data.horserace.processed = true;
-	for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
-		var header = data.horserace.column_names.horses[i];
-		var ranks = [];
-		for (var j = 0; j < data.horserace.length; j++) {
-			var timeslice = data.horserace[j].horses;
-			ranks.push(timeslice[i]);
-		}
-		horses.push({ name: header, ranks: ranks });
-	}
+	// horses = [];
+	// data.horserace.processed = true;
+	// for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
+	// 	var header = data.horserace.column_names.horses[i];
+	// 	var ranks = [];
+	// 	for (var j = 0; j < data.horserace.length; j++) {
+	// 		var timeslice = data.horserace[j].horses;
+	// 		ranks.push(timeslice[i]);
+	// 	}
+	// 	horses.push({ name: header, ranks: ranks });
+	// }
 }
 
 function updateViz(){
 	function color(d, i) { return colors[i % colors.length]; }
 
-	var lines = plot.selectAll(".line-group").data(horses);
+	var lines = plot.selectAll(".line-group").data(data.horserace);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
 		.on("click", function(d, i) {
@@ -127,13 +130,13 @@ function updateViz(){
 		});
 	lines_update
 		.select(".line")
-		.attr("d", function(d) { return line(d.ranks); })
+		.attr("d", function(d) { return line(d.weeks); })
 		.attr("stroke", color)
 		.attr("opacity", state.line_opacity)
 		.attr("stroke-width", state.line_width);
 	lines_update
 		.select(".shade")
-		.attr("d", function(d) { return line(d.ranks); })
+		.attr("d", function(d) { return line(d.weeks); })
 		.attr("stroke", color)
 		.attr("display", state.shade ? "block" : "none")
 		.attr("opacity", state.shade_opacity)
@@ -141,26 +144,28 @@ function updateViz(){
 	
 	lines.exit().remove();
 
-	var start_circles = plot.selectAll(".start-circle").data(horses);
+
+
+	var start_circles = plot.selectAll(".start-circle").data(data.horserace);
 	var start_circles_enter = start_circles.enter().append("circle").attr("class", "horse start-circle")
 		.attr("cx", 0)
 		.attr("r", 5)
 		.attr("fill", color);
 	start_circles.merge(start_circles_enter)
-		.attr("cy", function(d) { return y(d.ranks[0]); })
+		.attr("cy", function(d) { return y(d.weeks[0]); })
 		.select(".start.circle")
 		.attr("r", state.start_circle_r);
 	start_circles.exit().remove();
-
-	var labels = plot.selectAll(".labels-group").data(horses);
+	var labels = plot.selectAll(".labels-group").data(data.horserace);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
-		.attr("transform", function(d) { return "translate(" + x(state.timeslice) + "," + y(d.ranks[state.timeslice]) + ")"; });
+		.attr("transform", function(d) { return "translate(" + x(current_time) + "," + y(d.weeks[current_time]) + ")"; });
 	labels_enter.append("circle").attr("class", "end circle");
 	labels_enter.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
 		.attr("text-anchor", "middle");
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
+
 	var labels_update = labels.merge(labels_enter).attr("fill", color);
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
 	labels_update.select(".rank-number").attr("font-size", state.rank_font_size);
@@ -191,7 +196,6 @@ function clickline(d, i) {
 }
 
 function clearHighlighting() {
-	console.log("clearHighlighting");
 	state.selected_horse = null;
 	update();
 }
@@ -229,8 +233,8 @@ function updateMask(){
 		.attr("width", x(current_time));
 
 	$$(".labels-group").transition().ease(d3.easeLinear).duration(state.duration)
-		.attr("transform", function(d) { return "translate(" + x(current_time) + "," + y(d.ranks[current_time]) + ")"; })
-		.select(".rank-number").text(function(d) { return d.ranks[current_time]; });
+		.attr("transform", function(d) { return "translate(" + x(current_time) + "," + y(d.weeks[current_time]) + ")"; })
+		.select(".rank-number").text(function(d) { return d.weeks[current_time]; });
 }
 
 

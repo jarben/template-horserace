@@ -101,11 +101,11 @@ data:
   - Data
   - name: Time column
     dataset: horserace
-    key: timeslice
+    key: name
     type: column
     column: "Data::A"
   - name: Lines
     dataset: horserace
-    key: horses
+    key: weeks
     type: columns
-    columns: "Data::B-S"
+    columns: "Data::B-Z"
