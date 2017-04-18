@@ -164,7 +164,6 @@ function clickline(d, i) {
 }
 
 function clearHighlighting() {
-	console.log("clearHighlighting");
 	state.selected_horse = null;
 	update();
 }
