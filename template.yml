@@ -56,6 +56,7 @@ settings:
   - Animation
   - property: duration
     name: Animation duration
+    description: The animation speed, milliseconds per timeslice
     type: number
     min: 0
     step: 100

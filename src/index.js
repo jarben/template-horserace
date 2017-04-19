@@ -24,32 +24,33 @@ export var state = {
 	shade_width: 20,
 	line_opacity: 1,
 	line_width: 2,
-	duration: 300,
 	timeslice: 0,
 	selected_horse: null,
-	button_text: "Replay"
+	button_text: "Replay",
+	target_position: undefined,
+	duration: 200,
 };
+var current_position = 0;
 
-var prev_window_width, prev_window_height, changed_size = false;
 export function update() {
+	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
 
-	changed_size = prev_window_width != window.innerWidth || prev_window_height != window.innerHeight;
-
-	if (changed_size) {
-		svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
-		plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
-		w = window.innerWidth - state.margin_left - state.margin_right;
-		h = window.innerHeight - state.margin_top - state.margin_bottom;
-		$("#clip rect").attr("height", h + state.shade_width).attr("transform", "translate(0,-" + state.shade_width/2 + ")");
-	}
-
-	$("#replay").text(state.button_text);
+	w = window.innerWidth - state.margin_left - state.margin_right;
+	h = window.innerHeight - state.margin_top - state.margin_bottom;
 
 	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace, function(d, i) { return i; }));
 	y = d3.scaleLinear().range([h, 0]).domain([
 		d3.max(data.horserace, function(d) { return d3.max(d.horses, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.horses, function(v) { return +v; }); })
 	]);
+
+	$("#clip rect")
+		.attr("transform", "translate(0,-" + state.shade_width/2 + ")")
+		.attr("height", h + state.shade_width)
+		.attr("width", x(current_position));
+
+	$("#replay").text(state.button_text);
 
 	colors = d3[state.palette];
 	function color(d, i) { return colors[i % colors.length]; }
@@ -124,7 +125,7 @@ export function update() {
 	var labels = plot.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
-		.attr("transform", function(d) { return "translate(" + x(state.timeslice) + "," + y(d.ranks[state.timeslice]) + ")"; });
+		.attr("transform", function(d) { return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")"; });
 	labels_enter.append("circle").attr("class", "end circle");
 	labels_enter.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
@@ -132,15 +133,15 @@ export function update() {
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
 	var labels_update = labels.merge(labels_enter).attr("fill", color);
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
-	labels_update.select(".rank-number").attr("font-size", state.rank_font_size);
+	labels_update.select(".rank-number")
+		.attr("font-size", state.rank_font_size)
+		.text(function(d) { return d.ranks[Math.floor(current_position)]; });
 	labels_update.select(".name").attr("font-size", state.label_font_size)
 		.attr("x", state.end_circle_r + 2)
 		.text(function(d) { return d.name; });
 	labels.exit().remove();
 
-	if (changed_size) play();
-	prev_window_width = window.innerWidth;
-	prev_window_height = window.innerHeight;
+	if (current_position == getTargetPosition()) tieBreak();
 }
 
 function mouseover(d, i) {
@@ -168,7 +169,7 @@ function clearHighlighting() {
 	update();
 }
 
-export function draw() {
+function createDom() {
 	var body = $("body");
 	svg = body.append("svg").on("click", clearHighlighting);
 	plot = svg.append("g").attr("id", "plot");
@@ -176,18 +177,80 @@ export function draw() {
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
 	body.append("div").attr("id", "replay").text(state.button_text).on("click", play);
-	window.onresize = update;
+}
+
+export function draw() {
+	createDom();
 	update();
+	play();
+
+	window.onresize = function() {
+		$("body svg").remove();
+		createDom();
+		update();
+	};
+}
+
+function tieBreak() {
+	var seen_rank = {};
+	var target_position = getTargetPosition();
+	$$(".labels-group").each(function(d) {
+		var rank = d.ranks[target_position];
+		if (rank in seen_rank) {
+			seen_rank[rank].setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) - state.end_circle_r) + ")");
+			this.setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) + state.end_circle_r) + ")");
+		}
+		seen_rank[rank] = this;
+	});
+}
+
+function getRank(d, p) {
+	var floor_p = Math.floor(p);
+	if (p == floor_p) return d.ranks[p];
+	var frac_p = p - floor_p;
+	return (1 - frac_p) * d.ranks[floor_p] + frac_p * d.ranks[floor_p + 1];
+}
+
+function getTargetPosition() {
+	if (typeof state.target_position === "undefined") {
+		return data.horserace.length - 1;
+	}
+	return state.target_position;
+}
+
+var prev_timestamp,
+    af = null;
+function frame(t) {
+	var target_position = getTargetPosition();
+
+	if (!prev_timestamp) {
+		prev_timestamp = t;
+		af = requestAnimationFrame(frame);
+		return;
+	}
+	current_position += (t - prev_timestamp) / state.duration;
+	if (current_position > target_position) current_position = target_position;
+
+	$("#clip rect").attr("width", x(current_position));
+	$$(".labels-group")
+		.attr("transform", function(d) {
+			return "translate(" + x(current_position) + "," + y(getRank(d, current_position)) + ")";
+		})
+		.select(".rank-number").text(function(d) { return d.ranks[Math.floor(current_position)]; });
+
+	if (current_position < target_position) {
+		af = requestAnimationFrame(frame);
+		prev_timestamp = t;
+	}
+	else {
+		af = null;
+		tieBreak();
+	}
 }
 
 function play() {
-	for (var t = 0; t < data.horserace.length; t++) {
-		$("#clip rect").transition().ease(d3.easeLinear).duration(state.duration)
-			.delay(t * state.duration)
-			.attr("width", x(t));
-		$$(".labels-group").transition().ease(d3.easeLinear).duration(state.duration)
-			.delay(t * state.duration)
-			.attr("transform", function(d) { return "translate(" + x(t) + "," + y(d.ranks[t]) + ")"; })
-			.select(".rank-number").text(function(d) { return d.ranks[t]; });
-	}
+	current_position = 0;
+	prev_timestamp = null;
+	if (af) cancelAnimationFrame(af);
+	af = requestAnimationFrame(frame);
 }
