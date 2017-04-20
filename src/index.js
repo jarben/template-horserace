@@ -212,7 +212,7 @@ function tieBreak() {
 		var labels = labels_by_rank[rank];
 		if (labels.length > 1) {
 			for (var i = 0; i < labels.length; i++) {
-				var shift = state.end_circle_r*2 * (i - (labels.length - 1)/2);
+				var shift = state.end_circle_r*2 * (i - 1/2);
 				labels[i].setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) + shift) + ")");
 				labels[i].dataset.shift = shift;
 			}
