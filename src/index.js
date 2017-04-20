@@ -125,7 +125,9 @@ export function update() {
 	var labels = plot.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
-		.attr("transform", function(d) { return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")"; });
+		.attr("transform", function(d) {
+			return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
+		});
 	labels_enter.append("circle").attr("class", "end circle");
 	labels_enter.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
