@@ -143,7 +143,8 @@ export function update() {
 		.text(function(d) { return d.name; });
 	labels.exit().remove();
 
-	if (current_position == getTargetPosition()) tieBreak();
+	if (current_position != getTargetPosition()) play();
+	else tieBreak();
 }
 
 function mouseover(d, i) {
@@ -178,13 +179,17 @@ function createDom() {
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
-	body.append("div").attr("id", "replay").text(state.button_text).on("click", play);
+	body.append("div").attr("id", "replay").text(state.button_text).on("click", function() {
+		current_position = 0;
+		play();
+	});
 }
 
 export function draw() {
+	current_position = 0;
+
 	createDom();
 	update();
-	play();
 
 	window.onresize = function() {
 		$("body svg").remove();
@@ -221,17 +226,28 @@ function getTargetPosition() {
 }
 
 var prev_timestamp,
-    af = null;
+    af = null,
+    target_is_ahead;
 function frame(t) {
 	var target_position = getTargetPosition();
 
 	if (!prev_timestamp) {
 		prev_timestamp = t;
 		af = requestAnimationFrame(frame);
+		target_is_ahead = (current_position < target_position);
 		return;
 	}
-	current_position += (t - prev_timestamp) / state.duration;
-	if (current_position > target_position) current_position = target_position;
+
+	var reached_target;
+	if (target_is_ahead) {
+		current_position += (t - prev_timestamp) / state.duration;
+		reached_target = (current_position > target_position);
+	}
+	else {
+		current_position -= (t - prev_timestamp) / state.duration;
+		reached_target = (current_position < target_position);
+	}
+	if (reached_target) current_position = target_position;
 
 	$("#clip rect").attr("width", x(current_position));
 	$$(".labels-group")
@@ -240,18 +256,17 @@ function frame(t) {
 		})
 		.select(".rank-number").text(function(d) { return d.ranks[Math.floor(current_position)]; });
 
-	if (current_position < target_position) {
-		af = requestAnimationFrame(frame);
-		prev_timestamp = t;
-	}
-	else {
+	if (reached_target) {
 		af = null;
 		tieBreak();
+	}
+	else {
+		af = requestAnimationFrame(frame);
+		prev_timestamp = t;
 	}
 }
 
 function play() {
-	current_position = 0;
 	prev_timestamp = null;
 	if (af) cancelAnimationFrame(af);
 	af = requestAnimationFrame(frame);
