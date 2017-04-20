@@ -199,16 +199,23 @@ export function draw() {
 }
 
 function tieBreak() {
-	var seen_rank = {};
+	var labels_by_rank = {};
 	var target_position = getTargetPosition();
 	$$(".labels-group").each(function(d) {
 		var rank = d.ranks[target_position];
-		if (rank in seen_rank) {
-			seen_rank[rank].setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) - state.end_circle_r) + ")");
-			this.setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) + state.end_circle_r) + ")");
-		}
-		seen_rank[rank] = this;
+		if (!(rank in labels_by_rank)) labels_by_rank[rank] = [this];
+		else labels_by_rank[rank].push(this);
 	});
+	for (var rank in labels_by_rank) {
+		var labels = labels_by_rank[rank];
+		if (labels.length > 1) {
+			for (var i = 0; i < labels.length; i++) {
+				var shift = state.end_circle_r*2 * (i - (labels.length - 1)/2);
+				labels[i].setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) + shift) + ")");
+				labels[i].dataset.shift = shift;
+			}
+		}
+	}
 }
 
 function getRank(d, p) {
