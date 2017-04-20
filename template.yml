@@ -99,4 +99,4 @@ data:
     dataset: horserace
     key: horses
     type: columns
-    columns: "Data::B-N"
+    columns: "Data::B-O"
