@@ -48,6 +48,9 @@ settings:
     type: number
 
   - Colors
+  - property: bgcolor
+    name: Background color
+    type: color
   - property: palette
     name: Color scheme
     description: Choose a d3 color scheme, such as [[schemeCategory20]], [[schemeCategory20b]], [[schemeCategory20c]] or [[schemeCategory10]]

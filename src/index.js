@@ -29,11 +29,13 @@ export var state = {
 	button_text: "Replay",
 	target_position: undefined,
 	duration: 200,
+	bgcolor: "#FFFFFF",
 };
 var current_position = 0;
 
 export function update() {
 	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
+	svg.style("background-color", state.bgcolor);
 	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
 
 	w = window.innerWidth - state.margin_left - state.margin_right;
