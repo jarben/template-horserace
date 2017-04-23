@@ -33,6 +33,13 @@ export var state = {
 };
 var current_position = 0;
 
+var palettes = {
+  "schemeCategory10": d3.schemeCategory10,
+  "schemeCategory20": d3.schemeCategory20,
+  "schemeCategory20b": d3.schemeCategory20b,
+  "schemeCategory20c": d3.schemeCategory20c
+};
+
 export function update() {
 	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
 	svg.style("background-color", state.bgcolor);
@@ -54,7 +61,9 @@ export function update() {
 
 	$("#replay").text(state.button_text);
 
-	colors = d3[state.palette];
+	colors = palettes[state.palette];
+	if (!colors) throw new Error("Unknown color scheme: " + state.palette);
+
 	function color(d, i) { return colors[i % colors.length]; }
 
 	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace[d].timeslice });
