@@ -91,12 +91,7 @@ export function update() {
 	var lines = plot.selectAll(".line-group").data(horses);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
-		.on("click", function(d, i) {
-			d3.event.stopPropagation();
-			if (!state.selected_horse) state.selected_horse = i;
-			else state.selected_horse = null;
-			update();
-		});
+		.on("click", clickHorse);
 	lines_enter.append("path").attr("class", "shade")
 		.attr("clip-path", "url(#clip)")
 		.attr("fill", "none");
@@ -135,7 +130,7 @@ export function update() {
 
 	var labels = plot.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
-		.on("mouseover", mouseover).on("mouseout", mouseout);
+		.on("mouseover", mouseover).on("mouseout", mouseout).on("click", clickHorse);
 	labels_enter.append("circle").attr("class", "end circle");
 	labels_enter.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
@@ -173,6 +168,13 @@ function mouseout(d, i) {
 
 function clearHighlighting() {
 	state.selected_horse = null;
+	update();
+}
+
+function clickHorse(d, i) {
+	d3.event.stopPropagation();
+	if (state.selected_horse == null) state.selected_horse = i;
+	else state.selected_horse = null;
 	update();
 }
 
