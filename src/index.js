@@ -26,6 +26,7 @@ export var state = {
 	line_width: 2,
 	timeslice: 0,
 	selected_horse: null,
+	mouseover_horse: null,
 	button_text: "Replay",
 	target_position: undefined,
 	duration: 200,
@@ -98,10 +99,7 @@ export function update() {
 	lines_enter.append("path").attr("class", "line")
 		.attr("clip-path", "url(#clip)")
 		.attr("fill", "none");
-	var lines_update = lines.merge(lines_enter)
-		.attr("opacity", state.selected_horse == null ? 1 : function(d, i) {
-			return +(i == state.selected_horse);
-		});
+	var lines_update = lines.merge(lines_enter).attr("opacity", horseOpacity);
 	lines_update
 		.select(".line")
 		.attr("d", function(d) { return line(d.ranks); })
@@ -136,7 +134,7 @@ export function update() {
 		.attr("alignment-baseline", "central").attr("fill", "white")
 		.attr("text-anchor", "middle");
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
-	var labels_update = labels.merge(labels_enter).attr("fill", color);
+	var labels_update = labels.merge(labels_enter).attr("fill", color).attr("opacity", horseOpacity);
 	labels_update.attr("transform", function(d) {
 		return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
 	});
@@ -154,21 +152,28 @@ export function update() {
 }
 
 function mouseover(d, i) {
-	if (state.selected_horse != null) return;
-	var hovered = d;
-	$$(".horse").attr("opacity", function(d) {
-		return hovered.name == d.name ? 1 : 0.05;
-	});
+	state.mouseover_horse = i;
+	update();
 }
 
-function mouseout(d, i) {
-	if (state.selected_horse != null) return;
-	$$(".horse").attr("opacity", 1);
+function mouseout() {
+	state.mouseover_horse = null;
+	update();
 }
 
 function clearHighlighting() {
 	state.selected_horse = null;
 	update();
+}
+
+function horseOpacity(d, i) {
+	if (state.selected_horse != null) {
+		return +(i == state.selected_horse);
+	}
+	if (state.mouseover_horse != null) {
+		return (i == state.mouseover_horse) ? 1 : 0.05;
+	}
+	return 1;
 }
 
 function clickHorse(d, i) {
