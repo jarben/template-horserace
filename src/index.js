@@ -135,16 +135,16 @@ export function update() {
 
 	var labels = plot.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
-		.on("mouseover", mouseover).on("mouseout", mouseout)
-		.attr("transform", function(d) {
-			return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
-		});
+		.on("mouseover", mouseover).on("mouseout", mouseout);
 	labels_enter.append("circle").attr("class", "end circle");
 	labels_enter.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
 		.attr("text-anchor", "middle");
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
 	var labels_update = labels.merge(labels_enter).attr("fill", color);
+	labels_update.attr("transform", function(d) {
+		return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
+	});
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
 	labels_update.select(".rank-number")
 		.attr("font-size", state.rank_font_size)
