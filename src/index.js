@@ -171,13 +171,6 @@ function mouseout(d, i) {
 	$$(".horse").attr("opacity", 1);
 }
 
-function clickline(d, i) {
-	if (state.selected_horse) clearHighlighting();
-	else state.selected_horse = i;
-	update();
-	highlightHorse(state.selected_horsei);
-}
-
 function clearHighlighting() {
 	state.selected_horse = null;
 	update();
