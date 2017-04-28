@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { select as $, selectAll as $$ } from "d3";
 
-var svg, plot, h, w, x, y;
+var svg, plot, g_lines, g_labels, g_start_circles, h, w, x, y;
 
 var line = d3.line()
 	.x(function(d, i) { return x(i); })
@@ -88,7 +88,7 @@ export function update() {
 		horses.push({ name: header, ranks: ranks });
 	}
 
-	var lines = plot.selectAll(".line-group").data(horses);
+	var lines = g_lines.selectAll(".line-group").data(horses);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
 		.on("click", clickHorse);
@@ -117,7 +117,7 @@ export function update() {
 		.attr("stroke-width", state.shade_width);
 	lines.exit().remove();
 
-	var start_circles = plot.selectAll(".start-circle").data(horses);
+	var start_circles = g_start_circles.selectAll(".start-circle").data(horses);
 	var start_circles_enter = start_circles.enter().append("circle").attr("class", "horse start-circle")
 		.attr("cx", 0)
 		.attr("r", 5)
@@ -128,7 +128,7 @@ export function update() {
 		.attr("r", state.start_circle_r);
 	start_circles.exit().remove();
 
-	var labels = plot.selectAll(".labels-group").data(horses);
+	var labels = g_labels.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout).on("click", clickHorse);
 	labels_enter.append("circle").attr("class", "end circle");
@@ -181,10 +181,16 @@ function clickHorse(d, i) {
 function createDom() {
 	var body = $("body");
 	svg = body.append("svg").on("click", clearHighlighting);
+
 	plot = svg.append("g").attr("id", "plot");
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
+
+	g_lines = plot.append("g").attr("class", "g-lines");
+	g_start_circles = plot.append("g").attr("class", "g-start-circles");
+	g_labels = plot.append("g").attr("class", "g-labels");
+
 	body.append("div").attr("id", "replay").text(state.button_text).on("click", function() {
 		current_position = 0;
 		play();
