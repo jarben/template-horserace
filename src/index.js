@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { select as $, selectAll as $$ } from "d3";
 
-var svg, plot, h, w, x, y, colors, horses;
+var svg, plot, h, w, x, y;
 
 var line = d3.line()
 	.x(function(d, i) { return x(i); })
@@ -61,7 +61,7 @@ export function update() {
 
 	$("#replay").text(state.button_text);
 
-	colors = palettes[state.palette];
+	var colors = palettes[state.palette];
 	if (!colors) throw new Error("Unknown color scheme: " + state.palette);
 
 	function color(d, i) { return colors[i % colors.length]; }
@@ -77,7 +77,7 @@ export function update() {
 	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
 	$(".y.axis").call(yAxis);
 
-	horses = [];
+	var horses = [];
 	for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
 		var header = data.horserace.column_names.horses[i];
 		var ranks = [];
