@@ -104,8 +104,8 @@ export function update() {
 		.attr("clip-path", "url(#clip)")
 		.attr("fill", "none");
 	var lines_update = lines.merge(lines_enter)
-		.attr("opacity", function(d, i) {
-			return i == state.selected_horse || !state.selected_horse ? 1 : 0;
+		.attr("opacity", state.selected_horse == null ? 1 : function(d, i) {
+			return +(i == state.selected_horse);
 		});
 	lines_update
 		.select(".line")
@@ -159,7 +159,7 @@ export function update() {
 }
 
 function mouseover(d, i) {
-	if (state.selected_horse) return;
+	if (state.selected_horse != null) return;
 	var hovered = d;
 	$$(".horse").attr("opacity", function(d) {
 		return hovered.name == d.name ? 1 : 0.05;
@@ -167,7 +167,7 @@ function mouseover(d, i) {
 }
 
 function mouseout(d, i) {
-	if (state.selected_horse) return;
+	if (state.selected_horse != null) return;
 	$$(".horse").attr("opacity", 1);
 }
 
