@@ -209,8 +209,6 @@ export function draw() {
 	update();
 
 	window.onresize = function() {
-		$("body svg").remove();
-		createDom();
 		update();
 	};
 }
