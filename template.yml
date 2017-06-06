@@ -104,8 +104,13 @@ data:
     key: name
     type: column
     column: "Data::A"
+  - name: Horse images
+    dataset: horserace
+    key: icon
+    type: column
+    column: "Data::B"
   - name: Lines
     dataset: horserace
     key: weeks
     type: columns
-    columns: "Data::B-Z"
+    columns: "Data::C-AF"

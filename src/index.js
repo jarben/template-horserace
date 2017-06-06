@@ -10,12 +10,12 @@ var line = d3.line()
 export var data = {};
 
 export var state = {
-	margin_top: 100,
-	margin_right: 120,
-	margin_bottom: 50,
-	margin_left: 50,
+	margin_top: 20,
+	margin_right: 20,
+	margin_bottom: 40,
+	margin_left: 40,
 	start_circle_r: 2,
-	end_circle_r: 10,
+	end_circle_r: 14,
 	label_font_size: 12,
 	rank_font_size: 14,
 	palette: "schemeCategory20",
@@ -29,31 +29,39 @@ export var state = {
 	desired_time:10,
 	selected_horse: null,
 	button_text: "Replay",
-	flip_axis: true
+	flip_axis: true,
+	customTicks: true,
+	tickStepY: 3,
+	showImage:true
 };
 var current_time;
+var selected_line;
 
 var prev_window_width, prev_window_height, changed_size = false;
-export function update() {
 
+export function update() {
 	changed_size = prev_window_width != window.innerWidth || prev_window_height != window.innerHeight;
 
 	$("#replay").text(state.button_text);
 
-	colors = d3[state.palette];
-
-
+	if(state.palette){
+		colors = d3[state.palette];
+	}
+	
 	if( changed_size ) { resizeVizContainer() };
 	
 	if( changed_size || !data.horserace.processed ) { updateScale(); }
 	if( changed_size || !data.horserace.processed ) { updateAxes(); }
-	if( !data.horserace.processed ){ updateData(); }
-	
 
 	updateViz();
+
+	$("#clip rect").attr("width", x(current_time));
+
 	animateViz();
 	prev_window_width = window.innerWidth;
 	prev_window_height = window.innerHeight;
+
+	data.horserace.processed = true;
 }
 
 function resizeVizContainer(){
@@ -61,11 +69,11 @@ function resizeVizContainer(){
 	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
 	w = window.innerWidth - state.margin_left - state.margin_right;
 	h = window.innerHeight - state.margin_top - state.margin_bottom;
-	$("#clip rect").attr("height", h + state.shade_width).attr("transform", "translate(0,-" + state.shade_width/2 + ")");
+	$("#clip rect").transition().duration(0).attr("height", h + state.shade_width).attr("transform", "translate(0,-" + state.shade_width/2 + ")");
 }
 
 function updateScale(){
-	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace[0].weeks, function(d, i) { console.log(i); return i; }));
+	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace[0].weeks, function(d, i) { return i; }));
 	y = d3.scaleLinear().range([h, 0]).domain([
 		d3.max(data.horserace, function(d) { return d3.max(d.weeks, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.weeks, function(v) { return +v; }); })
@@ -77,12 +85,24 @@ function updateScale(){
 
 function updateAxes(){
 	var ticks = data.horserace[0].weeks.length;
-	var xAxis = d3.axisBottom(x).tickSize(-h).ticks(ticks).tickFormat(function(d) { return d });
+	var xAxis = d3.axisBottom(x).tickSize(-h).ticks(ticks).tickFormat(function(d) { return d + 1 });
 	
 	$(".x.axis").call(xAxis)
 		.attr('transform','translate(0,' + h + ')')
 
-	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10)	;
+	var yAxis = d3.axisLeft(y).tickSize(-w);
+	
+	if(state.customTicks){
+		var maxPoints = d3.max(data.horserace, function(d) { return d3.max(d.weeks, function(v) { return +v; }); });
+		if(state.tickStepY){
+			yAxis.tickValues(d3.range(0, maxPoints, state.tickStepY))
+		}
+
+		if(state.tickStepX){
+			yAxis.tickValues(d3.range(0, ticks, state.tickStepX))
+		}
+		
+	}
 	$(".y.axis").call(yAxis);
 
 	$$(".x.axis .tick").on('click',function(e){
@@ -91,22 +111,15 @@ function updateAxes(){
 	})
 }
 
-function updateData(){
-	// horses = [];
-	// data.horserace.processed = true;
-	// for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
-	// 	var header = data.horserace.column_names.horses[i];
-	// 	var ranks = [];
-	// 	for (var j = 0; j < data.horserace.length; j++) {
-	// 		var timeslice = data.horserace[j].horses;
-	// 		ranks.push(timeslice[i]);
-	// 	}
-	// 	horses.push({ name: header, ranks: ranks });
-	// }
-}
-
 function updateViz(){
-	function color(d, i) { return colors[i % colors.length]; }
+	function color(d, i) { 
+		if(state.palette){
+			return colors[i % colors.length]; 
+		}else{
+			return "#333"
+		}
+		
+	}
 
 	var lines = plot.selectAll(".line-group").data(data.horserace);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
@@ -156,15 +169,51 @@ function updateViz(){
 		.select(".start.circle")
 		.attr("r", state.start_circle_r);
 	start_circles.exit().remove();
+	
 	var labels = plot.selectAll(".labels-group").data(data.horserace);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout", mouseout)
 		.attr("transform", function(d) { return "translate(" + x(current_time) + "," + y(d.weeks[current_time]) + ")"; });
-	labels_enter.append("circle").attr("class", "end circle");
-	labels_enter.append("text").attr("class", "rank-number")
-		.attr("alignment-baseline", "central").attr("fill", "white")
-		.attr("text-anchor", "middle");
-	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
+	
+	if(state.showImage) {
+		labels_enter.append("circle")
+			.attr('r',state.end_circle_r)
+			.attr('fill','#fff')
+			.attr('stroke',"#eee")
+
+		labels_enter.append("image")
+			.attr('xlink:href',function(d){
+				return Flourish.static_prefix + '/team_logos/' + d.icon
+			})
+			.attr('height',state.end_circle_r * 2 - 8)
+			.attr('width',state.end_circle_r * 2 - 8)
+			.attr('y',-(state.end_circle_r * 2 - 8) / 2)
+			.attr('x',-(state.end_circle_r * 2 - 8) / 2)
+
+		labels.select("circle")
+			.attr('r',state.end_circle_r)
+			.attr('fill','#fff')
+			.attr('stroke',"#eee")
+
+		labels.select("image")
+			.attr('xlink:href',function(d){
+				return Flourish.static_prefix + '/team_logos/' + d.icon
+			})
+			.attr('height',state.end_circle_r * 2 - 8)
+			.attr('width',state.end_circle_r * 2 - 8)
+			.attr('y',-(state.end_circle_r * 2 - 8) / 2)
+			.attr('x',-(state.end_circle_r * 2 - 8) / 2)
+	} else {
+		labels_enter.append("circle").attr("class", "end circle");
+
+		if(state.showNumbber){
+			labels_enter.append("text").attr("class", "rank-number")
+				.attr("alignment-baseline", "central").attr("fill", "white")
+				.attr("text-anchor", "middle");
+			
+			labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
+		}
+	}
 
 	var labels_update = labels.merge(labels_enter).attr("fill", color);
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
@@ -172,6 +221,7 @@ function updateViz(){
 	labels_update.select(".name").attr("font-size", state.label_font_size)
 		.attr("x", state.end_circle_r + 2)
 		.text(function(d) { return d.name; });
+	
 	labels.exit().remove();
 }
 
@@ -184,8 +234,8 @@ function mouseover(d, i) {
 }
 
 function mouseout(d, i) {
-	if (state.selected_horse) return;
-	$$(".horse").attr("opacity", 1);
+	// if (state.selected_horse) return;
+	// $$(".horse").attr("opacity", 1);
 }
 
 function clickline(d, i) {
@@ -208,6 +258,11 @@ export function draw() {
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
+	
+	svg.on('mouseleave',function(d){
+		$$(".horse").attr("opacity", 1);
+	})
+
 	window.onresize = update;
 	update();
 }
@@ -238,3 +293,12 @@ function updateMask(){
 }
 
 
+
+
+
+
+
+// To do
+// Styling
+// Rank - Value
+// Image support
