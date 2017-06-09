@@ -8,17 +8,23 @@ body {
 	font-family: 'Source Sans Pro', sans-serif;
 }
 
-#replay {
+#rank-toggle {
 	position: absolute;
-	top: 20px;
-	right: 20px;
-	border: 1px solid rgba(0,0,0,0.2);
-	border-radius: 4px;
-	padding: 3px 6px;
-	background: #eee;
-	cursor: pointer;
-	&:hover {
-		background: #ddd;
+	top: 10px;
+	right: 10px;
+	button{
+		background:#aaa;
+		color:#fff;
+		border:none;
+		outline:none;
+		font-family: 'Source Sans Pro', sans-serif;
+		font-size:12px;
+		border-radius:3px;
+		margin:0 3px;
+		cursor:pointer;
+		&.selected{
+			background:#333;
+		}
 	}
 }
 

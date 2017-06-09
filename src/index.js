@@ -32,13 +32,15 @@ export var state = {
 	timeslice: 0,
 	selected_horse: null,
 	mouseover_horse: null,
-	button_text: "Replay",
 	target_position: 5,
 	duration: 200,
 	bgcolor: "#FFFFFF",
 	is_rank: true,
 	use_image:false,
-	curve: "curveLinear"
+	curve: "curveLinear",
+	label_ranks: "Ranks",
+	label_scores: "Scores",
+	flip_y: true
 };
 
 var current_position = 0;
@@ -63,6 +65,10 @@ export function update() {
 		max(data.horserace, function(d) { return max(d.times, function(v) { return +v; }); }),
 		min(data.horserace, function(d) { return min(d.times, function(v) { return +v; }); })
 	]);
+
+	if(state.flip_y){
+		y.range([0,h])
+	}
 
 	var races = [];
 	data.horserace.column_names.times.forEach(function(stage,i){
@@ -95,7 +101,13 @@ export function update() {
 		.attr("height", h + state.margin_top + state.margin_bottom)
 		.attr("width", x(current_position));
 
-	$("#replay").text(state.button_text);
+	$$("#rank-toggle button").classed("selected",function(){
+		if(this.innerText === state.label_ranks && state.is_rank) {
+			return true
+		}else if(this.innerText === state.label_scores && !state.is_rank) {
+			return true
+		}
+	});
 
 	var colors = palettes[state.palette];
 	if (!colors) throw new Error("Unknown color scheme: " + state.palette);
@@ -216,9 +228,7 @@ export function update() {
 
 	var start_circles = g_start_circles.selectAll(".start-circle").data(horses);
 	var start_circles_enter = start_circles.enter().append("circle").attr("class", "horse start-circle")
-		.attr("cx", 0)
-		.attr("r", 5)
-		.attr("fill", color);
+		.attr("cx", 0);
 	start_circles.merge(start_circles_enter)
 		.transition()
 		.duration(function(){
@@ -226,8 +236,8 @@ export function update() {
 		})
 		.attr("cy", function(d) { return y(d.ranks[0]); })
 		.attr("opacity", horseOpacity)
-		.select(".start.circle")
-		.attr("r", state.start_circle_r);
+		.attr("r", state.start_circle_r)
+		.attr("fill", color);
 	start_circles.exit().remove();
 
 	var labels = g_labels.selectAll(".labels-group").data(horses);
@@ -345,9 +355,20 @@ function createDom() {
 	g_start_circles = plot.append("g").attr("class", "g-start-circles");
 	g_labels = plot.append("g").attr("class", "g-labels");
 
-	body.append("div").attr("id", "replay").text(state.button_text).on("click", function() {
-		current_position = 0;
-		play();
+	var toggle = body.append("div").attr("id", "rank-toggle")
+		toggle.append("button").html(state.label_ranks)
+		toggle.append("button").html(state.label_scores)
+
+	toggle.selectAll("button").on("click", function(e) {
+		state.is_rank = this.innerText === state.label_ranks;
+		update();
+	})
+	.classed("selected",function(){
+		if(this.innerText === state.label_ranks && state.is_rank) {
+			return true
+		}else if(this.innerText === state.label_scores && !state.is_rank) {
+			return true
+		}
 	});
 }
 
