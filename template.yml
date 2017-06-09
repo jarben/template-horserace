@@ -38,6 +38,10 @@ settings:
   - property: shade_opacity
     name: Shading opacity
     type: number
+  - property: curve
+    name: Curve
+    description: Choose from [[curveLinear]], [[curveMonotoneX]], [[curveMonotoneY]], [[curveNatural]], [[curveStep]], [[curveStepAfter]] or [[curveStepBefore]]
+    type: string
 
   - Cirles and labels
   - property: start_circle_r

@@ -6,10 +6,10 @@ var svg, plot, g_lines, g_labels, g_start_circles, h, w, x, y;
 var line = d3.line()
 	.x(function(d, i) { return x(i); })
 	.y(function(d) { return y(d); })
-	.curve(d3.curveLinear);
 
 export var data = {};
 
+var old_state = {_init:true};
 export var state = {
 	margin_top: 100,
 	margin_right: 120,
@@ -33,7 +33,8 @@ export var state = {
 	duration: 200,
 	bgcolor: "#FFFFFF",
 	is_rank: true,
-	use_image:false
+	use_image:false,
+	curve: "curveLinear"
 };
 
 var current_position = 0;
@@ -53,15 +54,17 @@ export function update() {
 	w = window.innerWidth - state.margin_left - state.margin_right;
 	h = window.innerHeight - state.margin_top - state.margin_bottom;
 
-	x = d3.scaleLinear().range([0, w]).domain([0,d3.max(data.horserace,function(d){return d.times.length })]);
+	x = d3.scaleLinear().range([0, w]).domain([0,d3.max(data.horserace,function(d) {return d.times.length })]);
 	y = d3.scaleLinear().range([h, 0]).domain([
 		d3.max(data.horserace, function(d) { return d3.max(d.times, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.times, function(v) { return +v; }); })
 	]);
 
-	if(state.is_rank){
+	if(state.is_rank) {
 		y.domain([data.horserace.length,1])
 	}
+
+	line.curve(d3[state.curve]);
 
 	$('.highlight-line line').attr('y2',h)
 
@@ -90,14 +93,14 @@ export function update() {
 				.attr('x',0)
 				.attr('fill',state.bgcolor)
 				.attr('height',65)
-				.attr('width',function(){
+				.attr('width',function() {
 					return this.parentElement.getBoundingClientRect().width
 				})
 
 			tick.insert("rect", "text")
 				.attr('class','text-outline')
 				.attr('height','20px')
-				.attr('width',function(d){
+				.attr('width',function(d) {
 					return this.parentElement.querySelector('text').getComputedTextLength() + 10
 				})
 				.attr('y','-32px')
@@ -106,13 +109,13 @@ export function update() {
 				.attr('rx','10px')
 				.attr('stroke','#ccc')
 				.attr('stroke-width','2px')
-				.style('display',function(d){
-					if(state.highlight !== d){
+				.style('display',function(d) {
+					if(state.highlight !== d) {
 						return 'none'
 					}
 				})
 		})
-		.on('mouseenter',function(d){
+		.on('mouseenter',function(d) {
 			$(this).select('.text-outline').style('display','inherit');
 			state.highlight = d;
 
@@ -120,12 +123,12 @@ export function update() {
 				.style('display','inherit')
 				.attr('transform','translate(' + x(d) + ',0)')
 		})
-		.on('mouseleave',function(){
+		.on('mouseleave',function() {
 			state.highlight = null;
 			$(this).select('.text-outline').style('display','none');
 			$('.highlight-line').style('display','none')
 		})
-		.on('click',function(d){
+		.on('click',function(d) {
 			state.target_position = d;
 			update();
 		})
@@ -136,19 +139,19 @@ export function update() {
 		.attr("transform", "rotate(-45)");
 
 	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
-	if(state.is_rank){
-		yAxis.tickFormat(function(d){
+	if(state.is_rank) {
+		yAxis.tickFormat(function(d) {
 			return d % 1 === 0 ? d : "";
 		})
 	}
 	$(".y.axis").call(yAxis);
 
-	var horses = data.horserace.map(function(d){
-		if(state.is_rank){
+	var horses = data.horserace.map(function(d) {
+		if(state.is_rank) {
 			d.ranks = d.times.map(function(curr_score,i) {
 				var ranks_per_stage = [curr_score];
 				data.horserace.forEach(function(horse,j) {
-					if(i !== j){
+					if(i !== j) {
 						ranks_per_stage.push(horse.times[i])
 					}
 				})
@@ -160,22 +163,6 @@ export function update() {
 		
 		return d;
 	});
-
-	var highlights = d3.select(".highlight-targets").selectAll('rect').data(data.horserace);
-	var highlights_enter = highlights.enter().append('rect').attr('fill','#fff').attr('height',40)
-		.on('click',function(d,i){
-			state.target_position = Number(d.timeslice) - 1;
-		})
-		.on('mouseenter',function(d,i){
-			d3.select('.highlight-line')
-				.transition()
-				.attr('transform', "translate(" + x(d.timeslice - 1) + ",0)");
-		})
-	var highlights_update = highlights.merge(highlights_enter)
-		.attr('x',function(d){
-			return x(d.timeslice - 1) - x(.5);
-		})
-		.attr('width',x(1)  - 2)
 
 	var lines = g_lines.selectAll(".line-group").data(horses);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
@@ -191,12 +178,20 @@ export function update() {
 	var lines_update = lines.merge(lines_enter).attr("opacity", horseOpacity);
 	lines_update
 		.select(".line")
+		.transition()
+		.duration(function(){
+			return hasChanged("is_rank") ? 1000 : 0
+		})
 		.attr("d", function(d) { return line(d.ranks); })
 		.attr("stroke", color)
 		.attr("opacity", state.line_opacity)
 		.attr("stroke-width", state.line_width);
 	lines_update
 		.select(".shade")
+		.transition()
+		.duration(function(){
+			return hasChanged("is_rank") ? 1000 : 0
+		})
 		.attr("d", function(d) { return line(d.ranks); })
 		.attr("stroke", color)
 		.attr("display", state.shade ? "block" : "none")
@@ -210,6 +205,10 @@ export function update() {
 		.attr("r", 5)
 		.attr("fill", color);
 	start_circles.merge(start_circles_enter)
+		.transition()
+		.duration(function(){
+			return hasChanged("is_rank") ? 1000 : 0
+		})
 		.attr("cy", function(d) { return y(d.ranks[0]); })
 		.attr("opacity", horseOpacity)
 		.select(".start.circle")
@@ -219,7 +218,7 @@ export function update() {
 	var labels = g_labels.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
 		.on("mouseover", mouseover).on("mouseout",mouseout).on("click", clickHorse);
-	var end_circle = labels_enter.append("g").attr("class","end-circle-container")
+	var end_circle = labels_enter.append("g").attr("class","end-circle-container");
 	end_circle.append("circle").attr("class", "end circle");
 	end_circle.append("image");
 	end_circle.append("text").attr("class", "rank-number")
@@ -228,17 +227,21 @@ export function update() {
 	labels_enter.append("rect").attr("class","name-background");
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
 	var labels_update = labels.merge(labels_enter).attr("fill", color).attr("opacity", horseOpacity);
-	labels_update.attr("transform", function(d) {
-		return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
-	});
-	labels_update.select(".end-circle-container").attr("transform",null)
+	labels_update
+		.transition()
+		.duration(function(){
+			return hasChanged("is_rank") ? 1000 : 0
+		})
+		.attr("transform", function(d) {
+			return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
+		});
+	labels_update.select(".end-circle-container").attr("transform",null);
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
 	
-	if(state.use_image){
+	if(state.use_image) {
 		labels_update.select("image")
-			.attr('xlink:href',function(d){
-				return "http://static2.giroditalia.it/wp-content/uploads/2016/04/Tom_Dumoulin.jpg"
-				// return Flourish.static_prefix + '/team_logos/' + d.icon
+			.attr('xlink:href',function(d) {
+				return Flourish.static_prefix + d.icon
 			})
 			.style("display","inherit")
 			.attr('height',(state.end_circle_r * 2) - 2)
@@ -260,7 +263,7 @@ export function update() {
 		.text(function(d) { return d.name; });
 	labels_update.select(".name-background")
 		.attr("fill",state.bgcolor)
-		.attr("width",function(){ return this.parentElement.querySelector('.name').getComputedTextLength() + 4; })
+		.attr("width",function() { return this.parentElement.querySelector('.name').getComputedTextLength() + 4; })
 		.attr("height",state.label_font_size)
 		.attr("x", state.end_circle_r)
 		.attr("y", -state.label_font_size/2);
@@ -268,6 +271,8 @@ export function update() {
 
 	if (current_position != getTargetPosition()) play();
 	else tieBreak();
+
+	old_state = JSON.parse(JSON.stringify(state));
 }
 
 function mouseover(d, i) {
@@ -434,8 +439,13 @@ function play() {
 	af = requestAnimationFrame(frame);
 }
 
-//animate lines
-// interpolation/ step beforeafter
-// ranks instead of values
-// custom x-ticks and y ticks for ranking
-// dedaanify
+function hasChanged(property){
+	if(!old_state._init){
+		return state[property] !== old_state[property];
+	}else{
+		return false
+	}
+}
+
+// custom x-ticks and y ticks for ranking (ask duncan)
+// animate lines when switching ranks/values
