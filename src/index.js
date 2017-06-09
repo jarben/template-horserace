@@ -1,9 +1,13 @@
-import * as d3 from "d3";
-import { select as $, selectAll as $$ } from "d3";
+import { select as $, selectAll as $$ } from "d3-selection";
+import { scaleLinear, schemeCategory20c, schemeCategory20b, schemeCategory20, schemeCategory10 } from "d3-scale";
+import { min, max } from "d3-array";
+import { axisLeft, axisTop } from "d3-axis";
+import * as shape from "d3-shape";
+import "d3-transition";
 
 var svg, plot, g_lines, g_labels, g_start_circles, h, w, x, y;
 
-var line = d3.line()
+var line = shape.line()
 	.x(function(d, i) { return x(i); })
 	.y(function(d) { return y(d); })
 
@@ -40,10 +44,10 @@ export var state = {
 var current_position = 0;
 
 var palettes = {
-  "schemeCategory10": d3.schemeCategory10,
-  "schemeCategory20": d3.schemeCategory20,
-  "schemeCategory20b": d3.schemeCategory20b,
-  "schemeCategory20c": d3.schemeCategory20c
+  "schemeCategory10": schemeCategory10,
+  "schemeCategory20": schemeCategory20,
+  "schemeCategory20b": schemeCategory20b,
+  "schemeCategory20c": schemeCategory20c
 };
 
 export function update() {
@@ -54,16 +58,16 @@ export function update() {
 	w = window.innerWidth - state.margin_left - state.margin_right;
 	h = window.innerHeight - state.margin_top - state.margin_bottom;
 
-	x = d3.scaleLinear().range([0, w]).domain([0,data.horserace.column_names.times.length - 1]);
-	y = d3.scaleLinear().range([h, 0]).domain([
-		d3.max(data.horserace, function(d) { return d3.max(d.times, function(v) { return +v; }); }),
-		d3.min(data.horserace, function(d) { return d3.min(d.times, function(v) { return +v; }); })
+	x = scaleLinear().range([0, w]).domain([0,data.horserace.column_names.times.length - 1]);
+	y = scaleLinear().range([h, 0]).domain([
+		max(data.horserace, function(d) { return max(d.times, function(v) { return +v; }); }),
+		min(data.horserace, function(d) { return min(d.times, function(v) { return +v; }); })
 	]);
 
 	var races = [];
 	data.horserace.column_names.times.forEach(function(stage,i){
 		var race = [];
-		
+
 		data.horserace.forEach(function(horse){
 			race.push({
 				name: horse.name,
@@ -82,7 +86,7 @@ export function update() {
 		y.domain([data.horserace.length,1])
 	}
 
-	line.curve(d3[state.curve]);
+	line.curve(shape[state.curve]);
 
 	$('.highlight-line line').attr('y2',h)
 
@@ -97,8 +101,8 @@ export function update() {
 	if (!colors) throw new Error("Unknown color scheme: " + state.palette);
 
 	function color(d, i) { return colors[i % colors.length]; }
-	
-	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : "oi"; });
+
+	var xAxis = axisTop(x).tickFormat(function(d) { return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : "oi"; });
 
 	$(".x.axis").call(xAxis)
 		.selectAll(".tick")
@@ -158,7 +162,7 @@ export function update() {
 		.attr("dy", "-0.9em")
 		.attr("transform", "rotate(-45)");
 
-	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
+	var yAxis = axisLeft(y).tickSize(-w).tickPadding(10);
 	if(state.is_rank) {
 		yAxis.ticks(data.horserace.length)
 	}
@@ -248,7 +252,7 @@ export function update() {
 		});
 	labels_update.select(".end-circle-container").attr("transform",null);
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
-	
+
 	if(state.use_image) {
 		labels_update.select("image")
 			.attr('xlink:href',function(d) {
@@ -263,7 +267,7 @@ export function update() {
 	}else{
 		labels_update.select("image").style("display","none")
 	}
-	
+
 	labels_update.select(".rank-number")
 		.attr("font-size", state.rank_font_size)
 		.text(function(d) { return d.ranks[Math.floor(current_position)]; });
@@ -312,7 +316,7 @@ function horseOpacity(d, i) {
 }
 
 function clickHorse(d, i) {
-	d3.event.stopPropagation();
+	event.stopPropagation();
 	if (state.selected_horse == null) state.selected_horse = i;
 	else state.selected_horse = null;
 	update();
@@ -375,7 +379,7 @@ function tieBreak() {
 				$(labels[i]).select(".name-background")
 					.attr('x',state.end_circle_r * 0.75 * (labels.length - 0.5))
 					.attr('y',(labelStep * i) - (state.label_font_size/2))
-				
+
 				$(labels[i]).select(".name")
 					.attr('x',state.end_circle_r * 0.75 * (labels.length - 0.5) + 4)
 					.attr('y',(labelStep * i) - (((labels.length - 1) * labelStep)/2))
@@ -417,7 +421,7 @@ function frame(t) {
 
 	var reached_target;
 	if (target_is_ahead) {
-		
+
 		current_position += (t - prev_timestamp) / state.duration;
 		reached_target = (current_position > target_position);
 	}
