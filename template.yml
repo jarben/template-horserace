@@ -16,14 +16,15 @@ build:
     directory: less
 
 settings:
-  - property: flip_y
-    name: Flip y axis
-    type: boolean
-  - property: target_position
-    name: Target position
-    type: number
+  - Axes
   - property: is_rank
     name: Show ranks
+    type: boolean
+  - property: target_position
+    name: Starting position
+    type: number
+  - property: flip_y
+    name: Flip y-axis
     type: boolean
   - Lines
   - property: line_width

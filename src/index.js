@@ -32,7 +32,7 @@ export var state = {
 	timeslice: 0,
 	selected_horse: null,
 	mouseover_horse: null,
-	target_position: 5,
+	target_position: 2,
 	duration: 200,
 	bgcolor: "#FFFFFF",
 	is_rank: true,
