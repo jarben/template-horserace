@@ -252,7 +252,7 @@ export function update() {
 	if(state.use_image) {
 		labels_update.select("image")
 			.attr('xlink:href',function(d) {
-				return Flourish.static_prefix + d.icon
+				return d.pic
 			})
 			.style("display","inherit")
 			.attr('height',(state.end_circle_r * 2) - 2)
@@ -457,6 +457,3 @@ function hasChanged(property){
 		return false
 	}
 }
-
-// custom x-ticks and y ticks for ranking (ask duncan)
-// animate lines when switching ranks/values

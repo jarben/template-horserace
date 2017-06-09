@@ -110,14 +110,14 @@ data:
     dataset: horserace
     key: name
     type: column
-    column: "Transpose::A"
+    column: "Data::A"
   - name: Picture column
     dataset: horserace
     key: pic
     type: column
-    column: "Transpose::b"
+    column: "Data::b"
   - name: Lines
     dataset: horserace
     key: times
     type: columns
-    columns: "Transpose::C-K"
+    columns: "Data::C-K"
