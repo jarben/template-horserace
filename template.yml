@@ -16,6 +16,9 @@ build:
     directory: less
 
 settings:
+  - property: target_position
+    name: Traget position
+    type: number
   - Lines
   - property: line_width
     name: Line width
@@ -46,6 +49,9 @@ settings:
   - property: label_font_size
     name: Label font size
     type: number
+  - property: use_image
+    name: Use image
+    type: boolean
 
   - Colors
   - property: bgcolor
@@ -93,13 +99,18 @@ settings:
 
 data:
   - Data
-  - name: Time column
+  - name: Name column
     dataset: horserace
-    key: timeslice
+    key: name
     type: column
-    column: "Data::A"
+    column: "Transpose::A"
+  - name: Picture column
+    dataset: horserace
+    key: pic
+    type: column
+    column: "Transpose::b"
   - name: Lines
     dataset: horserace
-    key: horses
+    key: times
     type: columns
-    columns: "Data::B-S"
+    columns: "Transpose::C-H"

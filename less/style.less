@@ -5,7 +5,7 @@ html, body { height: 100%; }
 body {
 	margin: 0;
 	font-size: 12px;
-	font-family: 'Roboto', sans-serif;
+	font-family: 'Source Sans Pro', sans-serif;
 }
 
 #replay {
@@ -28,11 +28,34 @@ body {
 }
 
 .x.axis text, .y.axis text{
-	font-size: 10px;
+	font-size: 11px;
 	fill: grey;
+	font-family: 'Source Sans Pro', sans-serif;
+}
+
+.horse{
+	transition:200ms opacity;
+}
+
+.rank-number{
+	font-weight:bold;
+}
+
+.tick{
+	cursor:pointer;
 }
 
 .tick line {
 	stroke: #e0e1e1;
 	opacity: 1;
+}
+
+.domain {
+	stroke: #e0e1e1;
+	opacity: 1;
+}
+
+.circle.end{
+	stroke:#fff;
+	stroke-width:4px;
 }

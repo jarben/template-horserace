@@ -5,7 +5,8 @@ var svg, plot, g_lines, g_labels, g_start_circles, h, w, x, y;
 
 var line = d3.line()
 	.x(function(d, i) { return x(i); })
-	.y(function(d) { return y(d); });
+	.y(function(d) { return y(d); })
+	.curve(d3.curveLinear);
 
 export var data = {};
 
@@ -15,10 +16,10 @@ export var state = {
 	margin_bottom: 50,
 	margin_left: 50,
 	start_circle_r: 2,
-	end_circle_r: 10,
+	end_circle_r: 20,
 	label_font_size: 12,
 	rank_font_size: 14,
-	palette: "schemeCategory20",
+	palette: "schemeCategory20c",
 	shade: true,
 	shade_opacity: 0.1,
 	shade_width: 20,
@@ -28,10 +29,13 @@ export var state = {
 	selected_horse: null,
 	mouseover_horse: null,
 	button_text: "Replay",
-	target_position: undefined,
+	target_position: 5,
 	duration: 200,
 	bgcolor: "#FFFFFF",
+	is_rank: false,
+	use_image:false
 };
+
 var current_position = 0;
 
 var palettes = {
@@ -42,6 +46,7 @@ var palettes = {
 };
 
 export function update() {
+	console.log(data)
 	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
 	svg.style("background-color", state.bgcolor);
 	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
@@ -49,11 +54,13 @@ export function update() {
 	w = window.innerWidth - state.margin_left - state.margin_right;
 	h = window.innerHeight - state.margin_top - state.margin_bottom;
 
-	x = d3.scaleLinear().range([0, w]).domain(d3.extent(data.horserace, function(d, i) { return i; }));
+	x = d3.scaleLinear().range([0, w]).domain([0,d3.max(data.horserace,function(d){return d.times.length })]);
 	y = d3.scaleLinear().range([h, 0]).domain([
-		d3.max(data.horserace, function(d) { return d3.max(d.horses, function(v) { return +v; }); }),
-		d3.min(data.horserace, function(d) { return d3.min(d.horses, function(v) { return +v; }); })
+		d3.max(data.horserace, function(d) { return d3.max(d.times, function(v) { return +v; }); }),
+		d3.min(data.horserace, function(d) { return d3.min(d.times, function(v) { return +v; }); })
 	]);
+
+	$('.highlight-line line').attr('y2',h)
 
 	$("#clip rect")
 		.attr("transform", "translate(0,-" + state.shade_width/2 + ")")
@@ -66,9 +73,59 @@ export function update() {
 	if (!colors) throw new Error("Unknown color scheme: " + state.palette);
 
 	function color(d, i) { return colors[i % colors.length]; }
+	
+	var xAxis = d3.axisTop(x).tickFormat(function(d) { console.log(d); return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : ""; });
 
-	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace[d].timeslice });
 	$(".x.axis").call(xAxis)
+		.selectAll(".tick")
+		.each(function() {
+			var tick = $(this);
+			tick.selectAll("rect").remove();
+
+			tick.insert("rect", "text")
+				.attr('y',-65)
+				.attr('x',0)
+				.attr('fill',state.bgcolor)
+				.attr('height',65)
+				.attr('width',function(){
+					return this.parentElement.getBoundingClientRect().width
+				})
+
+			tick.insert("rect", "text")
+				.attr('class','text-outline')
+				.attr('height','20px')
+				.attr('width',function(d){
+					return this.parentElement.querySelector('text').getComputedTextLength() + 10
+				})
+				.attr('y','-32px')
+				.attr('x','21px')
+				.attr('transform','rotate(-45)')
+				.attr('rx','10px')
+				.attr('stroke','#ccc')
+				.attr('stroke-width','2px')
+				.style('display',function(d){
+					if(state.highlight !== d){
+						return 'none'
+					}
+				})
+		})
+		.on('mouseenter',function(d){
+			$(this).select('.text-outline').style('display','inherit');
+			state.highlight = d;
+
+			$('.highlight-line')
+				.style('display','inherit')
+				.attr('transform','translate(' + x(d) + ',0)')
+		})
+		.on('mouseleave',function(){
+			state.highlight = null;
+			$(this).select('.text-outline').style('display','none');
+			$('.highlight-line').style('display','none')
+		})
+		.on('click',function(d){
+			state.target_position = d;
+			update();
+		})
 		.selectAll("text")
 		.style("text-anchor","start")
 		.attr("dx", "2.3em")
@@ -78,20 +135,50 @@ export function update() {
 	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
 	$(".y.axis").call(yAxis);
 
-	var horses = [];
-	for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
-		var header = data.horserace.column_names.horses[i];
-		var ranks = [];
-		for (var j = 0; j < data.horserace.length; j++) {
-			var timeslice = data.horserace[j].horses;
-			ranks.push(timeslice[i]);
-		}
-		horses.push({ name: header, ranks: ranks });
-	}
+	var horses = data.horserace.map(function(d){
+		d.ranks = d.times;
+		return d;
+	});
+	console.log(data)
+	// for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
+	// 	var header = data.horserace.column_names.horses[i];
+	// 	var ranks = [];
+	// 	for (var j = 0; j < data.horserace.length; j++) {
+	// 		var timeslice = data.horserace[j].horses;
+	// 		var score = timeslice[i];
+	// 		var rank = timeslice.map(function(d){return Number(d)}).sort(function(a,b){return b-a}).indexOf(Number(score));
+
+	// 		if(state.is_rank){
+	// 			ranks.push(rank);
+	// 		}else{
+	// 			ranks.push(score);
+	// 		}
+	// 	}
+
+	// 	horses.push({ name: header, ranks: ranks });
+	// }
+
+	console.log(horses)
+	var highlights = d3.select(".highlight-targets").selectAll('rect').data(data.horserace);
+	var highlights_enter = highlights.enter().append('rect').attr('fill','#fff').attr('height',40)
+		.on('click',function(d,i){
+			state.target_position = Number(d.timeslice) - 1;
+		})
+		.on('mouseenter',function(d,i){
+			d3.select('.highlight-line')
+				.transition()
+				.attr('transform', "translate(" + x(d.timeslice - 1) + ",0)");
+		})
+	var highlights_update = highlights.merge(highlights_enter)
+		.attr('x',function(d){
+			return x(d.timeslice - 1) - x(.5);
+		})
+		.attr('width',x(1)  - 2)
 
 	var lines = g_lines.selectAll(".line-group").data(horses);
 	var lines_enter = lines.enter().append("g").attr("class", "horse line-group")
-		.on("mouseover", mouseover).on("mouseout", mouseout)
+		.on("mouseover", mouseover)
+		.on("mouseout", mouseout)
 		.on("click", clickHorse);
 	lines_enter.append("path").attr("class", "shade")
 		.attr("clip-path", "url(#clip)")
@@ -122,29 +209,59 @@ export function update() {
 		.attr("fill", color);
 	start_circles.merge(start_circles_enter)
 		.attr("cy", function(d) { return y(d.ranks[0]); })
+		.attr("opacity", horseOpacity)
 		.select(".start.circle")
 		.attr("r", state.start_circle_r);
 	start_circles.exit().remove();
 
 	var labels = g_labels.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
-		.on("mouseover", mouseover).on("mouseout", mouseout).on("click", clickHorse);
-	labels_enter.append("circle").attr("class", "end circle");
-	labels_enter.append("text").attr("class", "rank-number")
+		.on("mouseover", mouseover).on("click", clickHorse);
+	var end_circle = labels_enter.append("g").attr("class","end-circle-container")
+	end_circle.append("circle").attr("class", "end circle");
+	end_circle.append("image");
+	end_circle.append("text").attr("class", "rank-number")
 		.attr("alignment-baseline", "central").attr("fill", "white")
 		.attr("text-anchor", "middle");
+	labels_enter.append("rect").attr("class","name-background");
 	labels_enter.append("text").attr("class", "name").attr("alignment-baseline", "central");
 	var labels_update = labels.merge(labels_enter).attr("fill", color).attr("opacity", horseOpacity);
 	labels_update.attr("transform", function(d) {
 		return "translate(" + x(current_position) + "," + y(d.ranks[Math.floor(current_position)]) + ")";
 	});
+	labels_update.select(".end-circle-container").attr("transform",null)
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
+	
+	if(state.use_image){
+		labels_update.select("image")
+			.attr('xlink:href',function(d){
+				return "http://static2.giroditalia.it/wp-content/uploads/2016/04/Tom_Dumoulin.jpg"
+				// return Flourish.static_prefix + '/team_logos/' + d.icon
+			})
+			.style("display","inherit")
+			.attr('height',(state.end_circle_r * 2) - 2)
+			.attr('width',(state.end_circle_r * 2) - 2)
+			.attr('y',-((state.end_circle_r * 2)-2) / 2)
+			.attr('x',-((state.end_circle_r * 2)-2) / 2)
+			.attr('clip-path','url(#circleClip)')
+	}else{
+		labels_update.select("image").style("display","none")
+	}
+	
 	labels_update.select(".rank-number")
 		.attr("font-size", state.rank_font_size)
 		.text(function(d) { return d.ranks[Math.floor(current_position)]; });
+
 	labels_update.select(".name").attr("font-size", state.label_font_size)
-		.attr("x", state.end_circle_r + 2)
+		.attr("x", state.end_circle_r + 4)
+		.attr("y", 0)
 		.text(function(d) { return d.name; });
+	labels_update.select(".name-background")
+		.attr("fill",state.bgcolor)
+		.attr("width",function(){ return this.parentElement.querySelector('.name').getComputedTextLength() + 4; })
+		.attr("height",state.label_font_size)
+		.attr("x", state.end_circle_r)
+		.attr("y", -state.label_font_size/2);
 	labels.exit().remove();
 
 	if (current_position != getTargetPosition()) play();
@@ -189,8 +306,16 @@ function createDom() {
 
 	plot = svg.append("g").attr("id", "plot");
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
+	plot.append("clipPath").attr("id", "circleClip").append("circle").attr("r", state.end_circle_r - 2);
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
+
+	plot.append("g").attr("class","highlight-line")
+		.style("display","none")
+		.append("line")
+		.attr('stroke','#ccc')
+		.attr('stroke-width','2px')
+		.attr('x1',0.5).attr('x2',0.5).attr('y1',-30).attr('y2',400)
 
 	g_lines = plot.append("g").attr("class", "g-lines");
 	g_start_circles = plot.append("g").attr("class", "g-start-circles");
@@ -204,7 +329,6 @@ function createDom() {
 
 export function draw() {
 	current_position = 0;
-
 	createDom();
 	update();
 
@@ -223,12 +347,24 @@ function tieBreak() {
 	});
 	for (var rank in labels_by_rank) {
 		var labels = labels_by_rank[rank];
+		var labelStep = state.label_font_size * 1.2
 		if (labels.length > 1) {
 			for (var i = 0; i < labels.length; i++) {
-				var shift = state.end_circle_r*2 * (i - 1/2);
-				labels[i].setAttribute("transform", "translate(" + x(current_position) + "," + (y(rank) + shift) + ")");
+				var shift = state.end_circle_r * 0.5 * (i - 1/2);
+				$(labels[i]).select(".end-circle-container")
+					.attr("transform","translate(" + shift + ",0)")
+
+				$(labels[i]).select(".name-background")
+					.attr('x',state.end_circle_r * 0.75 * (labels.length - 0.5))
+					.attr('y',(labelStep * i) - (state.label_font_size/2))
+				
+				$(labels[i]).select(".name")
+					.attr('x',state.end_circle_r * 0.75 * (labels.length - 0.5) + 4)
+					.attr('y',(labelStep * i) - (((labels.length - 1) * labelStep)/2))
+
 				labels[i].dataset.shift = shift;
 			}
+
 		}
 	}
 }
@@ -250,6 +386,7 @@ function getTargetPosition() {
 var prev_timestamp,
     af = null,
     target_is_ahead;
+
 function frame(t) {
 	var target_position = getTargetPosition();
 
@@ -262,6 +399,7 @@ function frame(t) {
 
 	var reached_target;
 	if (target_is_ahead) {
+		
 		current_position += (t - prev_timestamp) / state.duration;
 		reached_target = (current_position > target_position);
 	}
