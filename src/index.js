@@ -254,6 +254,8 @@ export function update() {
 	labels_update.select(".end.circle").attr("r", state.end_circle_r).attr("fill", color);
 
 	if(state.use_image) {
+		plot.select("#circleClip circle").attr("r", state.end_circle_r - 2);
+
 		labels_update.select("image")
 			.attr('xlink:href',function(d) {
 				return d.pic
@@ -328,7 +330,7 @@ function createDom() {
 
 	plot = svg.append("g").attr("id", "plot");
 	plot.append("clipPath").attr("id", "clip").append("rect").attr("width", 0);
-	plot.append("clipPath").attr("id", "circleClip").append("circle").attr("r", state.end_circle_r - 2);
+	plot.append("clipPath").attr("id", "circleClip").append("circle")
 	plot.append("g").attr("class", "x axis");
 	plot.append("g").attr("class", "y axis");
 
