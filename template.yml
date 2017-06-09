@@ -17,8 +17,11 @@ build:
 
 settings:
   - property: target_position
-    name: Traget position
+    name: Target position
     type: number
+  - property: is_rank
+    name: Show ranks
+    type: boolean
   - Lines
   - property: line_width
     name: Line width

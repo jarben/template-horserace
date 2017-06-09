@@ -32,7 +32,7 @@ export var state = {
 	target_position: 5,
 	duration: 200,
 	bgcolor: "#FFFFFF",
-	is_rank: false,
+	is_rank: true,
 	use_image:false
 };
 
@@ -46,7 +46,6 @@ var palettes = {
 };
 
 export function update() {
-	console.log(data)
 	svg.attr("width", window.innerWidth).attr("height", window.innerHeight);
 	svg.style("background-color", state.bgcolor);
 	plot.attr("transform", "translate(" + state.margin_left + "," + state.margin_top + ")");
@@ -59,6 +58,10 @@ export function update() {
 		d3.max(data.horserace, function(d) { return d3.max(d.times, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.times, function(v) { return +v; }); })
 	]);
+
+	if(state.is_rank){
+		y.domain([data.horserace.length,1])
+	}
 
 	$('.highlight-line line').attr('y2',h)
 
@@ -74,7 +77,7 @@ export function update() {
 
 	function color(d, i) { return colors[i % colors.length]; }
 	
-	var xAxis = d3.axisTop(x).tickFormat(function(d) { console.log(d); return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : ""; });
+	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : ""; });
 
 	$(".x.axis").call(xAxis)
 		.selectAll(".tick")
@@ -133,32 +136,31 @@ export function update() {
 		.attr("transform", "rotate(-45)");
 
 	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
+	if(state.is_rank){
+		yAxis.tickFormat(function(d){
+			return d % 1 === 0 ? d : "";
+		})
+	}
 	$(".y.axis").call(yAxis);
 
 	var horses = data.horserace.map(function(d){
-		d.ranks = d.times;
+		if(state.is_rank){
+			d.ranks = d.times.map(function(curr_score,i) {
+				var ranks_per_stage = [curr_score];
+				data.horserace.forEach(function(horse,j) {
+					if(i !== j){
+						ranks_per_stage.push(horse.times[i])
+					}
+				})
+				return ranks_per_stage.sort(function(a,b) { return Number(a) > Number(b) }).indexOf(curr_score) + 1;
+			})
+		}else{
+			d.ranks = d.times;
+		}
+		
 		return d;
 	});
-	console.log(data)
-	// for (var i = 0; i < data.horserace.column_names.horses.length; i++) {
-	// 	var header = data.horserace.column_names.horses[i];
-	// 	var ranks = [];
-	// 	for (var j = 0; j < data.horserace.length; j++) {
-	// 		var timeslice = data.horserace[j].horses;
-	// 		var score = timeslice[i];
-	// 		var rank = timeslice.map(function(d){return Number(d)}).sort(function(a,b){return b-a}).indexOf(Number(score));
 
-	// 		if(state.is_rank){
-	// 			ranks.push(rank);
-	// 		}else{
-	// 			ranks.push(score);
-	// 		}
-	// 	}
-
-	// 	horses.push({ name: header, ranks: ranks });
-	// }
-
-	console.log(horses)
 	var highlights = d3.select(".highlight-targets").selectAll('rect').data(data.horserace);
 	var highlights_enter = highlights.enter().append('rect').attr('fill','#fff').attr('height',40)
 		.on('click',function(d,i){
@@ -216,7 +218,7 @@ export function update() {
 
 	var labels = g_labels.selectAll(".labels-group").data(horses);
 	var labels_enter = labels.enter().append("g").attr("class", "horse labels-group")
-		.on("mouseover", mouseover).on("click", clickHorse);
+		.on("mouseover", mouseover).on("mouseout",mouseout).on("click", clickHorse);
 	var end_circle = labels_enter.append("g").attr("class","end-circle-container")
 	end_circle.append("circle").attr("class", "end circle");
 	end_circle.append("image");
@@ -431,3 +433,9 @@ function play() {
 	if (af) cancelAnimationFrame(af);
 	af = requestAnimationFrame(frame);
 }
+
+//animate lines
+// interpolation/ step beforeafter
+// ranks instead of values
+// custom x-ticks and y ticks for ranking
+// dedaanify
