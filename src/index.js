@@ -145,22 +145,33 @@ export function update() {
 		})
 	}
 	$(".y.axis").call(yAxis);
+	var races = [];
+
+	data.horserace.column_names.times.forEach(function(stage,i){
+		var race = [];
+		
+		data.horserace.forEach(function(horse){
+			race.push({
+				name: horse.name,
+				time: Number(horse.times[i])
+			});
+		})
+
+		race.sort(function(a,b){
+			return a.time > b.time
+		})
+
+		races.push(race)
+	})
 
 	var horses = data.horserace.map(function(d) {
 		if(state.is_rank) {
-			d.ranks = d.times.map(function(curr_score,i) {
-				var ranks_per_stage = [curr_score];
-				data.horserace.forEach(function(horse,j) {
-					if(i !== j) {
-						ranks_per_stage.push(horse.times[i])
-					}
-				})
-				return ranks_per_stage.sort(function(a,b) { return Number(a) > Number(b) }).indexOf(curr_score) + 1;
+			d.ranks = d.times.map(function(time,i){
+				return races[i].map(function(x) { return x.name }).indexOf(d.name) + 1
 			})
 		}else{
 			d.ranks = d.times;
 		}
-		
 		return d;
 	});
 

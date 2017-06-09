@@ -120,4 +120,4 @@ data:
     dataset: horserace
     key: times
     type: columns
-    columns: "Transpose::C-H"
+    columns: "Transpose::C-K"
