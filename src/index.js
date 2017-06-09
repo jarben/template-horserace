@@ -19,7 +19,7 @@ export var state = {
 	end_circle_r: 20,
 	label_font_size: 12,
 	rank_font_size: 14,
-	palette: "schemeCategory20c",
+	palette: "schemeCategory20",
 	shade: true,
 	shade_opacity: 0.1,
 	shade_width: 20,
@@ -54,11 +54,29 @@ export function update() {
 	w = window.innerWidth - state.margin_left - state.margin_right;
 	h = window.innerHeight - state.margin_top - state.margin_bottom;
 
-	x = d3.scaleLinear().range([0, w]).domain([0,d3.max(data.horserace,function(d) {return d.times.length })]);
+	x = d3.scaleLinear().range([0, w]).domain([0,data.horserace.column_names.times.length - 1]);
 	y = d3.scaleLinear().range([h, 0]).domain([
 		d3.max(data.horserace, function(d) { return d3.max(d.times, function(v) { return +v; }); }),
 		d3.min(data.horserace, function(d) { return d3.min(d.times, function(v) { return +v; }); })
 	]);
+
+	var races = [];
+	data.horserace.column_names.times.forEach(function(stage,i){
+		var race = [];
+		
+		data.horserace.forEach(function(horse){
+			race.push({
+				name: horse.name,
+				time: Number(horse.times[i])
+			});
+		})
+
+		race.sort(function(a,b){
+			return a.time > b.time
+		})
+
+		races.push(race)
+	})
 
 	if(state.is_rank) {
 		y.domain([data.horserace.length,1])
@@ -80,7 +98,7 @@ export function update() {
 
 	function color(d, i) { return colors[i % colors.length]; }
 	
-	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : ""; });
+	var xAxis = d3.axisTop(x).tickFormat(function(d) { return data.horserace.column_names.times[d] ? data.horserace.column_names.times[d] : "oi"; });
 
 	$(".x.axis").call(xAxis)
 		.selectAll(".tick")
@@ -89,9 +107,11 @@ export function update() {
 			tick.selectAll("rect").remove();
 
 			tick.insert("rect", "text")
+				.attr("class","text-hitarea")
 				.attr('y',-65)
 				.attr('x',0)
 				.attr('fill',state.bgcolor)
+				.attr('opacity',0.1)
 				.attr('height',65)
 				.attr('width',function() {
 					return this.parentElement.getBoundingClientRect().width
@@ -140,29 +160,9 @@ export function update() {
 
 	var yAxis = d3.axisLeft(y).tickSize(-w).tickPadding(10);
 	if(state.is_rank) {
-		yAxis.tickFormat(function(d) {
-			return d % 1 === 0 ? d : "";
-		})
+		yAxis.ticks(data.horserace.length)
 	}
 	$(".y.axis").call(yAxis);
-	var races = [];
-
-	data.horserace.column_names.times.forEach(function(stage,i){
-		var race = [];
-		
-		data.horserace.forEach(function(horse){
-			race.push({
-				name: horse.name,
-				time: Number(horse.times[i])
-			});
-		})
-
-		race.sort(function(a,b){
-			return a.time > b.time
-		})
-
-		races.push(race)
-	})
 
 	var horses = data.horserace.map(function(d) {
 		if(state.is_rank) {
