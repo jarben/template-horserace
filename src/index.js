@@ -87,8 +87,8 @@ export function update() {
 	$('.highlight-line line').attr('y2',h)
 
 	$("#clip rect")
-		.attr("transform", "translate(0,-" + state.shade_width/2 + ")")
-		.attr("height", h + state.shade_width)
+		.attr("transform", "translate(0,-" + state.margin_top + ")")
+		.attr("height", h + state.margin_top + state.margin_bottom)
 		.attr("width", x(current_position));
 
 	$("#replay").text(state.button_text);
